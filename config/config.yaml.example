@@ -24,6 +24,21 @@ timeframes:
 confluence_threshold: 7.0
 watch_threshold: 5.0
 
+scoring:
+  weights:
+    ema_alignment: 2.0
+    rsi_condition: 1.5
+    macd_crossover: 1.5
+    candle_pattern_at_level: 2.0
+    price_at_sr: 1.5
+    bollinger_signal: 1.0
+    news_sentiment: 1.5
+    volatility_context: 0.5
+  htf_bonus:
+    d1_alignment: 0.5
+    h4_alignment: 0.3
+    h4_contradiction_penalty: -1.0
+
 volatility:
   atr_multiplier: 1.5
   pip_spike_threshold: 30

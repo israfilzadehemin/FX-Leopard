@@ -149,18 +149,53 @@ class VolatilitySignal:
 @dataclass
 class TradeSignal:
     """
-    Final aggregated output from the Confluence Scoring Engine (Issue #3 stub).
+    Final aggregated output from the Confluence Scoring Engine.
 
-    Fields will be expanded when Issue #3 is implemented.
+    Emitted for SIGNAL (score ≥ 7.0) and WATCH (score 5.0–6.9) alerts.
+    IGNORE alerts are not emitted — they are silently dropped.
     """
 
+    # --- Identity ---
     symbol: str
     timeframe: str
-    timestamp: str
-    direction: str = "neutral"      # "long" | "short" | "neutral"
-    score: float = 0.0
-    signal_type: str = "IGNORE"     # "SIGNAL" | "WATCH" | "IGNORE"
-    entry: Optional[float] = None
+    timestamp: str                      # ISO-8601 UTC string
+
+    # --- Classification ---
+    signal_type: str = "IGNORE"         # "SIGNAL" | "WATCH" | "IGNORE"
+    direction: str = "BUY"              # "BUY" | "SELL"
+    score: float = 0.0                  # Normalised confluence score 0.0–10.0
+
+    # --- Entry / Exit levels (populated for SIGNAL only) ---
+    entry_zone: List[float] = field(default_factory=list)   # [low, high]
     stop_loss: Optional[float] = None
     take_profit: Optional[float] = None
-    reasoning: List[str] = field(default_factory=list)
+    rr_ratio: Optional[float] = None
+    sl_pips: Optional[float] = None
+    tp_pips: Optional[float] = None
+
+    # --- Reasoning ---
+    confluences: List[str] = field(default_factory=list)
+    invalidation: str = ""
+
+    # --- Timing ---
+    signal_age_seconds: int = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a plain dict suitable for JSON serialisation or Telegram."""
+        return {
+            "type": self.signal_type,
+            "direction": self.direction,
+            "symbol": self.symbol,
+            "timeframe": self.timeframe,
+            "timestamp": self.timestamp,
+            "score": round(self.score, 2),
+            "entry_zone": self.entry_zone,
+            "stop_loss": self.stop_loss,
+            "take_profit": self.take_profit,
+            "rr_ratio": self.rr_ratio,
+            "sl_pips": self.sl_pips,
+            "tp_pips": self.tp_pips,
+            "confluences": self.confluences,
+            "invalidation": self.invalidation,
+            "signal_age_seconds": self.signal_age_seconds,
+        }

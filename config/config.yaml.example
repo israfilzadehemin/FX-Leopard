@@ -1,0 +1,47 @@
+# FX-Leopard Configuration
+# Copy this file to config/config.yaml and fill in your values
+
+pairs:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - AUDUSD
+  - USDCAD
+  - NZDUSD
+  - XAUUSD
+  - XAGUSD
+  - USOIL
+  - UKOIL
+
+timeframes:
+  - M5
+  - M15
+  - H1
+  - H4
+  - D1
+
+confluence_threshold: 7.0
+watch_threshold: 5.0
+
+volatility:
+  atr_multiplier: 1.5
+  pip_spike_threshold: 30
+
+notifications:
+  channel: telegram
+  bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
+  chat_id: "YOUR_TELEGRAM_CHAT_ID"
+
+api_keys:
+  twelvedata: "YOUR_TWELVEDATA_API_KEY"
+  openai: "YOUR_OPENAI_API_KEY"
+  newsapi: "YOUR_NEWSAPI_KEY"
+
+calendar:
+  pre_event_alert_minutes: 15
+  min_impact: high
+
+logging:
+  signal_db: "data/signals.db"
+  log_level: INFO

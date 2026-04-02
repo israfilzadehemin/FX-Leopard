@@ -1,31 +1,21 @@
-# Environment & secrets
-.env
-config/config.yaml
+# FX-Leopard Configuration
+# Copy this file to config/config.yaml and fill in your values
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv/
-*.egg-info/
-dist/
-build/
+pairs:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - AUDUSD
+  - USDCAD
+  - NZDUSD
+  - XAUUSD
+  - XAGUSD
+  - USOIL
+  - UKOIL
 
-# Data & logs
-*.db
-*.sqlite
-logs/
-*.log
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Docker
-.dockerignore
+# Configurations for trading analysis include:
+# 1. Timeframes for the analysis
+# 2. Confluence and watch thresholds (for signal generation)
+# 3. Volatility and notification settings
+# 4. API keys for required services.

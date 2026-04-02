@@ -1,15 +1,31 @@
-.gitignore
-
-config.yaml
+# Environment & secrets
 .env
-*.db
+config/config.yaml
+
+# Python
 __pycache__/
-*.pyc
-*.pyo
-.venv/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
 venv/
-.idea/
-.vscode/
+.venv/
 *.egg-info/
 dist/
 build/
+
+# Data & logs
+*.db
+*.sqlite
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+.dockerignore

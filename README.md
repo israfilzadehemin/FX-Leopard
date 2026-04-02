@@ -1,62 +1,129 @@
 # 🐆 FX-Leopard
 
-> An AI-powered FX market surveillance agent that watches markets 24/5 across multiple instruments and timeframes, detects high-probability trade setups, and delivers rich signal alerts to your Telegram — so you never have to stare at charts again.
+> An AI-powered FX market surveillance agent that watches charts, news & volatility 24/5 — and sends you Telegram signals so you don't have to stare at screens.
 
 ---
 
-## 🎯 What It Does
+## 🧠 Concept
 
-FX-Leopard acts as your personal trading analyst running around the clock. It:
+FX-Leopard is a **discretionary intraday trading assistant**. It does all the legwork:
+- Watches 10+ instruments simultaneously across 5 timeframes
+- Reads real-time news and parses sentiment using GPT-4o
+- Detects volatility spikes and scheduled high-impact events
+- Scores setups using a confluence engine
+- Sends you a rich Telegram alert only when a high-probability setup is forming
 
-- 📡 **Watches** all major FX pairs and commodities simultaneously in real-time
-- 📊 **Analyzes** multiple timeframes (M5 → D1) for technical confluence
-- 📰 **Reads** live financial news and scores sentiment per currency using GPT-4o
-- 📅 **Monitors** the economic calendar and pre-alerts before high-impact events
-- ⚡ **Detects** sudden volatility spikes and momentum moves
-- 📲 **Notifies** you on Telegram with full signal briefs including entry, SL, TP, RR, and reasoning
-
-You stay sharp for the decision. The agent does all the stalking.
+You stay sharp for the **kill decision only**. 🐆
 
 ---
 
 ## 📡 Instruments Covered
 
-**FX Majors:** EURUSD · GBPUSD · USDJPY · USDCHF · AUDUSD · USDCAD · NZDUSD
-
-**Commodities:** XAUUSD (Gold) · XAGUSD (Silver) · USOIL · UKOIL
+| Type | Pairs |
+|---|---|
+| FX Majors | EURUSD, GBPUSD, USDJPY, USDCHF, AUDUSD, USDCAD, NZDUSD |
+| Commodities | XAUUSD, XAGUSD, USOIL |
 
 ---
 
-## 🧠 Signal Detection Logic
+## 🕐 Timeframe Stack
 
-### Timeframe Stack
 | Timeframe | Role |
-|-----------|------|
-| M5  | Entry trigger & precision timing |
+|---|---|
+| M5 | Entry trigger & precision timing |
 | M15 | Setup confirmation |
-| H1  | Structure & trend direction |
-| H4  | Bias & key levels |
-| D1  | Overall market context |
-
-### Technical Indicators
-- **Trend:** EMA 20/50/200, ADX
-- **Momentum:** RSI (divergence + oversold/overbought), MACD crossover
-- **Volatility:** Bollinger Band squeeze → expansion, ATR spike
-- **Structure:** S/R breaks, higher highs/lows, round numbers, daily levels
-- **Candles:** Engulfing, Pin Bar, Inside Bar, Hammer, Shooting Star at key levels
-
-### Confluence Scoring
-| Score | Action |
-|-------|--------|
-| ≥ 7.0 | 🟢 Full Signal Alert sent |
-| 5.0 – 6.9 | 🟡 Watch Alert sent |
-| < 5.0 | Silent — ignored |
+| H1 | Structure & trend direction |
+| H4 | Bias & key levels |
+| D1 | Overall market context |
 
 ---
 
-## 📲 Notification Types
+## 🏗️ Architecture
 
-### 🟢 Full Signal Alert
+```
+┌──────────────────────────────────────────────────┐
+│                  DATA INGESTION                  │
+│  Price Feed (WebSocket)  │  News  │  Calendar    │
+└──────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────┐
+│                 AI AGENT CORE                    │
+│                                                  │
+│  Technical Engine  │  News/NLP  │  Volatility   │
+│                                                  │
+│           Confluence Scoring Engine              │
+│     Score ≥ 7 → SIGNAL | 5-6 → WATCH | <5 →    │
+└──────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────────┐
+│              NOTIFICATION LAYER                  │
+│                 Telegram Bot                     │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+## 🧩 Components
+
+| # | Module | Description |
+|---|---|---|
+| 1 | `price_feed` | WebSocket connection to TwelveData for real-time OHLCV |
+| 2 | `indicator_engine` | Multi-timeframe technical analysis using pandas-ta |
+| 3 | `confluence_engine` | Scores setups across technical + fundamental signals |
+| 4 | `news_engine` | Fetches news, parses sentiment via GPT-4o |
+| 5 | `calendar_engine` | Monitors economic calendar, fires pre/post event alerts |
+| 6 | `volatility_monitor` | Detects ATR spikes and sudden pip movements |
+| 7 | `notifier` | Telegram bot that formats and sends signal messages |
+| 8 | `signal_logger` | SQLite-based logging of all signals for performance review |
+| 9 | `deploy` | Dockerfile + VPS deployment config |
+
+---
+
+## ⚙️ Configuration
+
+All configuration lives in `config/config.yaml`:
+
+```yaml
+pairs:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - AUDUSD
+  - USDCAD
+  - NZDUSD
+  - XAUUSD
+  - XAGUSD
+  - USOIL
+
+timeframes: [5min, 15min, 1h, 4h, 1day]
+
+confluence:
+  signal_threshold: 7.0
+  watch_threshold: 5.0
+
+notifications:
+  channel: telegram
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  chat_id: "${TELEGRAM_CHAT_ID}"
+
+api_keys:
+  twelvedata: "${TWELVEDATA_API_KEY}"
+  openai: "${OPENAI_API_KEY}"
+  newsapi: "${NEWSAPI_KEY}"
+
+volatility:
+  atr_multiplier: 1.5
+  pip_spike_threshold: 30
+  spike_window_minutes: 5
+```
+
+---
+
+## 📲 Signal Format
+
 ```
 🐆 SIGNAL — XAUUSD | LONG | H1 Confirmed
 
@@ -75,135 +142,38 @@ You stay sharp for the decision. The agent does all the stalking.
 
 📰 Fundamental Backdrop:
   ✅ USD softened after weak ADP data
-  ✅ Gold sentiment bullish (safe haven bid)
+  ✅ Gold demand sentiment bullish
   ⚠️  Fed speech in 2h — volatility risk
 
 ⏱️ Signal generated: 14:32 UTC
 🔕 Invalidated if: 4H candle closes below 1,981.00
 ```
 
-### 🟡 Watch Alert
-Notifies when a setup is forming but not yet confirmed.
-
-### ⚡ Volatility Alert
-Fires when a sudden pip spike or ATR expansion is detected with a news cause identified.
-
-### 📅 Pre-News Alert
-Fires 15 minutes before high-impact calendar events (NFP, CPI, FOMC, etc.) with forecast vs previous data.
-
----
-
-## ⚙️ Configuration
-
-All settings live in `config.yaml` — no code changes needed:
-
-```yaml
-pairs:
-  - EURUSD
-  - GBPUSD
-  - USDJPY
-  - USDCHF
-  - AUDUSD
-  - USDCAD
-  - NZDUSD
-  - XAUUSD
-  - XAGUSD
-  - USOIL
-  - UKOIL
-
-timeframes: [M5, M15, H1, H4, D1]
-
-confluence:
-  signal_threshold: 7.0
-  watch_threshold: 5.0
-
-notifications:
-  channel: telegram
-  bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
-  chat_id: "YOUR_TELEGRAM_CHAT_ID"
-
-api_keys:
-  twelvedata: "YOUR_TWELVEDATA_API_KEY"
-  openai: "YOUR_OPENAI_API_KEY"
-  newsapi: "YOUR_NEWSAPI_KEY"
-
-volatility:
-  atr_multiplier: 1.5
-  pip_spike_threshold: 30
-  spike_window_minutes: 5
-```
-
----
-
-## 🏗️ Architecture
-
-```
-Data Ingestion
-  ├── Price Feed (TwelveData WebSocket)
-  ├── News Feed (NewsAPI + Reuters RSS)
-  └── Economic Calendar (ForexFactory scraper)
-          │
-          ▼
-AI Agent Core
-  ├── Technical Analysis Engine (pandas-ta, multi-TF)
-  ├── News/Sentiment Engine (GPT-4o)
-  ├── Volatility Monitor (ATR + pip spike)
-  └── Confluence Scoring Engine
-          │
-          ▼
-Notification Layer
-  └── Telegram Bot (python-telegram-bot)
-          │
-          ▼
-Signal Logger
-  └── SQLite (all signals logged for performance review)
-```
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Language | Python 3.11+ |
-| Price Data | TwelveData WebSocket API |
-| Indicators | pandas-ta |
-| News NLP | OpenAI GPT-4o API |
-| Scheduling | APScheduler + asyncio |
-| Notifications | python-telegram-bot |
-| Storage | SQLite |
-| Deployment | Docker + Hetzner VPS (CX11 ~€4/mo) |
-
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone the repo
+### Prerequisites
+- Python 3.11+
+- TwelveData API key (free tier)
+- OpenAI API key
+- NewsAPI key
+- Telegram Bot token + chat ID
+
+### Setup
 ```bash
 git clone https://github.com/israfilzadehemin/FX-Leopard.git
 cd FX-Leopard
-```
-
-### 2. Install dependencies
-```bash
+cp config/config.example.yaml config/config.yaml
+# Fill in your API keys in config/config.yaml or set env vars
 pip install -r requirements.txt
-```
-
-### 3. Configure
-```bash
-cp config.example.yaml config.yaml
-# Edit config.yaml with your API keys and Telegram credentials
-```
-
-### 4. Run
-```bash
 python main.py
 ```
 
-### 5. Deploy (optional)
+### Docker
 ```bash
 docker build -t fx-leopard .
-docker run -d --restart always -v $(pwd)/config.yaml:/app/config.yaml fx-leopard
+docker run --env-file .env fx-leopard
 ```
 
 ---
@@ -212,60 +182,30 @@ docker run -d --restart always -v $(pwd)/config.yaml:/app/config.yaml fx-leopard
 
 ```
 FX-Leopard/
-├── main.py                    # Entry point
-├── config.yaml                # Your personal config (git-ignored)
-├── config.example.yaml        # Template config
-├── requirements.txt
+├── main.py                  # Entry point
+├── config/
+│   ├── config.yaml          # Your config (gitignored)
+│   └── config.example.yaml  # Template
+├── src/
+│   ├── price_feed/          # WebSocket price ingestion
+│   ├── indicator_engine/    # Technical analysis
+│   ├── confluence_engine/   # Signal scoring
+│   ├── news_engine/         # News fetch + GPT sentiment
+│   ├── calendar_engine/     # Economic calendar
+│   ├── volatility_monitor/  # Spike detection
+│   ├── notifier/            # Telegram bot
+│   └── signal_logger/       # SQLite signal log
+├── tests/
 ├── Dockerfile
-├── .env.example
-├── agent/
-│   ├── __init__.py
-│   ├── engine.py              # Main agent orchestrator
-│   ├── price_feed.py          # TwelveData WebSocket client
-│   ├── indicators.py          # Multi-TF technical analysis
-│   ├── confluence.py          # Signal scoring engine
-│   ├── news.py                # News fetch + GPT-4o sentiment
-│   ├── calendar.py            # Economic calendar monitor
-│   └── volatility.py          # Spike detection
-├── notifications/
-│   ├── __init__.py
-│   ├── telegram_bot.py        # Telegram notification sender
-│   └── formatters.py          # Alert message formatting
-├── storage/
-│   ├── __init__.py
-│   └── signal_logger.py       # SQLite signal logger
-└── tests/
-    ├── test_indicators.py
-    ├── test_confluence.py
-    ├── test_news.py
-    └── test_notifications.py
+├── requirements.txt
+└── .env.example
 ```
-
----
-
-## 📊 Signal Logging
-
-Every signal is logged to SQLite for performance review:
-
-| Column | Description |
-|--------|-------------|
-| timestamp | When signal was generated |
-| instrument | e.g. XAUUSD |
-| direction | LONG / SHORT |
-| entry_zone | Price range |
-| stop_loss | SL price |
-| take_profit | TP price |
-| rr_ratio | Risk/reward |
-| confluence_score | Score out of 10 |
-| technical_reasons | JSON array |
-| news_context | Sentiment summary |
-| outcome | WIN / LOSS / PENDING / INVALIDATED |
 
 ---
 
 ## ⚠️ Disclaimer
 
-FX-Leopard is a **market surveillance and signal notification tool**. It does not execute trades automatically. All trading decisions remain with the user. Trading FX and commodities carries significant financial risk.
+FX-Leopard is a **signal assistant**, not an execution bot. All trade decisions remain yours. This tool does not place orders. Past signal performance does not guarantee future results. Trade responsibly.
 
 ---
 

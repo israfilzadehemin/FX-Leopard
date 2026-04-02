@@ -1,0 +1,46 @@
+pairs:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - AUDUSD
+  - USDCAD
+  - NZDUSD
+  - XAUUSD
+  - XAGUSD
+  - USOIL
+
+timeframes: [5min, 15min, 1h, 4h, 1day]
+
+confluence:
+  signal_threshold: 7.0
+  watch_threshold: 5.0
+
+notifications:
+  channel: telegram
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  chat_id: "${TELEGRAM_CHAT_ID}"
+
+api_keys:
+  twelvedata: "${TWELVEDATA_API_KEY}"
+  openai: "${OPENAI_API_KEY}"
+  newsapi: "${NEWSAPI_KEY}"
+
+volatility:
+  atr_multiplier: 1.5
+  pip_spike_threshold: 30
+  spike_window_minutes: 5
+
+indicators:
+  ema_periods: [20, 50, 200]
+  rsi_period: 14
+  rsi_oversold: 30
+  rsi_overbought: 70
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  adx_period: 14
+  adx_trend_threshold: 25
+  bollinger_period: 20
+  bollinger_std: 2
+  atr_period: 14

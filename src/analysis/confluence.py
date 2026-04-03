@@ -162,6 +162,10 @@ class ConfluenceEngine:
         """Cache the latest sentiment signal for a symbol (Issue #4 hook)."""
         self._sentiment_cache[sentiment.symbol] = sentiment
 
+    def update_sentiment(self, signal: SentimentSignal) -> None:
+        """Alias for :meth:`on_sentiment_signal` — preferred entry point for Issue #4."""
+        self.on_sentiment_signal(signal)
+
     def on_volatility_signal(self, volatility: VolatilitySignal) -> None:
         """Cache the latest volatility signal for a symbol (Issue #6 hook)."""
         self._volatility_cache[volatility.symbol] = volatility
@@ -444,7 +448,7 @@ class ConfluenceEngine:
         direction: str,
         sentiment: Optional[SentimentSignal],
     ) -> tuple[float, List[str]]:
-        """Stub — returns 0 until Issue #4 is merged."""
+        """Score news sentiment contribution for the given direction."""
         max_w = self._weights.get("news_sentiment", DEFAULT_WEIGHTS["news_sentiment"])
         tags: List[str] = []
         if sentiment is None:
@@ -452,14 +456,24 @@ class ConfluenceEngine:
         if sentiment is None:
             return 0.0, tags
 
-        if (direction == "BUY" and sentiment.sentiment == "bullish") or (
-            direction == "SELL" and sentiment.sentiment == "bearish"
-        ):
+        # Use the canonical direction field; fall back to legacy sentiment field
+        sent_direction = sentiment.direction if sentiment.direction != "neutral" else sentiment.sentiment
+
+        aligned = (direction == "BUY" and sent_direction == "bullish") or (
+            direction == "SELL" and sent_direction == "bearish"
+        )
+        if not aligned:
+            return 0.0, tags
+
+        # If score_contribution is pre-computed, honour it (capped at max weight)
+        if sentiment.score_contribution > 0.0:
+            score = min(sentiment.score_contribution, max_w)
+        else:
             score = max_w * min(sentiment.confidence, 1.0)
-            if score > 0:
-                tags.append(f"news_sentiment_{sentiment.sentiment}")
-            return score, tags
-        return 0.0, tags
+
+        if score > 0:
+            tags.append(f"news_sentiment_{sent_direction}")
+        return score, tags
 
     def _score_volatility(
         self,

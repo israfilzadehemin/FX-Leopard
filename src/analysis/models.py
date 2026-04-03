@@ -115,18 +115,26 @@ class TechnicalSignal:
 @dataclass
 class SentimentSignal:
     """
-    Output from the News/GPT sentiment engine (Issue #4 stub).
+    Output from the News/GPT sentiment engine (Issue #4).
 
-    Fields will be expanded when Issue #4 is implemented.
+    ``direction`` is the canonical field for the bias ("bullish" | "bearish" | "neutral").
+    ``sentiment`` is kept as an alias for backward compatibility with the
+    confluence engine and existing tests.
+    ``strength`` expresses how strong the directional bias is (0.0–1.0).
+    ``score_contribution`` is the pre-computed contribution to the confluence
+    score (max 1.5, matching the ``news_sentiment`` weight).
     """
 
     symbol: str
     timestamp: str
-    sentiment: str = "neutral"      # "bullish" | "bearish" | "neutral"
-    confidence: float = 0.0
-    impact: str = "low"             # "high" | "medium" | "low"
+    direction: str = "neutral"          # "bullish" | "bearish" | "neutral"
+    sentiment: str = "neutral"          # alias kept for backward compat
+    strength: float = 0.0               # 0.0–1.0
+    confidence: float = 0.0             # 0.0–1.0
+    impact: str = "low"                 # "high" | "medium" | "low"
     headlines: List[str] = field(default_factory=list)
     summary: str = ""
+    score_contribution: float = 0.0     # pre-computed confluence score (max 1.5)
 
 
 @dataclass

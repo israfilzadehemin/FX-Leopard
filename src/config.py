@@ -21,6 +21,9 @@ class NotificationsConfig:
     channel: str = "telegram"
     bot_token: str = ""
     chat_id: str = ""
+    dedup_window_seconds: int = 60
+    rate_limit_delay_seconds: float = 1.5
+    max_retries: int = 3
 
 
 @dataclass
@@ -98,6 +101,9 @@ def load_config(path: Optional[str] = None) -> AppConfig:
         channel=notifications_raw.get("channel", "telegram"),
         bot_token=_resolve_env(notifications_raw.get("bot_token", "")),
         chat_id=_resolve_env(notifications_raw.get("chat_id", "")),
+        dedup_window_seconds=int(notifications_raw.get("dedup_window_seconds", 60)),
+        rate_limit_delay_seconds=float(notifications_raw.get("rate_limit_delay_seconds", 1.5)),
+        max_retries=int(notifications_raw.get("max_retries", 3)),
     )
 
     api_keys = ApiKeysConfig(

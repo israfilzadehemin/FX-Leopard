@@ -50,6 +50,9 @@ notifications:
   channel: telegram
   bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
   chat_id: "YOUR_TELEGRAM_CHAT_ID"
+  dedup_window_seconds: 60
+  rate_limit_delay_seconds: 1.5
+  max_retries: 3
 
 api_keys:
   twelvedata: "YOUR_TWELVEDATA_API_KEY"

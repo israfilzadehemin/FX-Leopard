@@ -6,7 +6,7 @@ All tests use synthetic price/candle data — no live feed or API keys needed.
 
 from __future__ import annotations
 
-import time
+from datetime import datetime, timezone
 from typing import List, Optional
 from unittest.mock import MagicMock
 
@@ -226,12 +226,6 @@ class TestATRExpansion:
         # All candles are uniform — no spike
         candles = _make_candles(30, spread=0.0005)
 
-        for c in candles:
-            result = monitor.on_candle(c)
-
-        # The last result should not be a spike (or None if no spike)
-        # We feed only uniform candles, so no expansion expected
-        # Get the final signal from the last candle
         last_signal = None
         for c in candles:
             last_signal = monitor.on_candle(c)
@@ -270,7 +264,6 @@ class TestPipSpike:
         """Feed a sequence of price ticks spaced *interval_seconds* apart."""
         last_signal = None
         for i, price in enumerate(prices):
-            from datetime import datetime, timezone
             ts = datetime.fromtimestamp(
                 start_ts + i * interval_seconds, tz=timezone.utc
             ).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -387,7 +380,6 @@ class TestDirection:
         start = 1743595200.0
         prices = [1.2680, 1.2635]
         signal = None
-        from datetime import datetime, timezone
         for i, price in enumerate(prices):
             ts = datetime.fromtimestamp(
                 start + i * 30, tz=timezone.utc
@@ -404,7 +396,6 @@ class TestDirection:
         start = 1743595200.0
         prices = [1.2635, 1.2680]
         signal = None
-        from datetime import datetime, timezone
         for i, price in enumerate(prices):
             ts = datetime.fromtimestamp(
                 start + i * 30, tz=timezone.utc
@@ -436,7 +427,6 @@ class TestCooldown:
             }
         )
         start = 1743595200.0
-        from datetime import datetime, timezone
 
         # First spike
         prices_1 = [1.2680, 1.2635]
@@ -475,7 +465,6 @@ class TestCooldown:
                 }
             }
         )
-        from datetime import datetime, timezone
 
         start = 1743595200.0
         signals = []
@@ -504,7 +493,6 @@ class TestVolatilitySignalConstruction:
         monitor = _make_monitor()
         start = 1743595200.0
         prices = [1.2680, 1.2635]
-        from datetime import datetime, timezone
 
         signal = None
         for i, price in enumerate(prices):
@@ -560,7 +548,6 @@ class TestScoreContribution:
         monitor = _make_monitor()
         start = 1743595200.0
         prices = [1.2680, 1.2635]
-        from datetime import datetime, timezone
 
         signal = None
         for i, price in enumerate(prices):

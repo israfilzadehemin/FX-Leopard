@@ -295,16 +295,18 @@ class VolatilityMonitor:
 
         # --- Condition A: ATR expansion ---
         atr_current: Optional[float] = None
-        atr_average: Optional[float] = None
-        atr_ratio:   Optional[float] = None
-        atr_spike    = False
+        atr_baseline: Optional[float] = None  # ATR(14) — the "normal" volatility level
+        atr_ratio:    Optional[float] = None
+        atr_spike     = False
 
         if len(state.candles) >= 15:  # need at least period+1
             candles = state.candles
-            # atr_average = ATR(14) baseline (Wilder-smoothed over last 15 candles)
-            atr_average = _compute_atr(candles[-15:], period=14)
-            # atr_current = True Range of the most recent candle
-            # (more responsive to a single-candle spike than Wilder smoothing)
+            # atr_baseline = Wilder ATR(14) computed from the last 15 candles.
+            # This represents the "normal" volatility level for the symbol.
+            atr_baseline = _compute_atr(candles[-15:], period=14)
+            # atr_current = True Range of the most recent candle.
+            # Comparing TR directly against the smoothed baseline is more responsive
+            # to single-candle spikes than comparing two Wilder-smoothed values.
             last  = candles[-1]
             prev  = candles[-2]
             atr_current = max(
@@ -312,8 +314,8 @@ class VolatilityMonitor:
                 abs(last.high - prev.close),
                 abs(last.low  - prev.close),
             )
-            if atr_average is not None and atr_average > 0:
-                atr_ratio = atr_current / atr_average
+            if atr_baseline is not None and atr_baseline > 0:
+                atr_ratio = atr_current / atr_baseline
                 if atr_ratio > self._atr_multiplier:
                     atr_spike = True
 
@@ -356,10 +358,10 @@ class VolatilityMonitor:
             price_before=price_before,
             price_now=current_price,
             atr_current=atr_current,
-            atr_average=atr_average,
+            atr_average=atr_baseline,   # expose baseline as atr_average for consumers
             atr_ratio=atr_ratio,
             window_seconds=self._pip_window_seconds,
-            pips_moved=round(pips_moved, 1) if pip_spike else None,
+            pips_moved=round(pips_moved, 1),  # always include for context
             probable_catalyst="Pending news check",
             score_contribution=round(score_contribution, 4),
             catalyst="",

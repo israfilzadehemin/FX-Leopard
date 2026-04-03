@@ -14,13 +14,16 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from openai import APIError, OpenAI
 
 from analysis.models import SentimentSignal
 from data.news_feed import NewsFeed, NewsHeadline
+
+if TYPE_CHECKING:
+    from storage.signal_logger import SignalLogger
 
 logger = logging.getLogger(__name__)
 
@@ -108,9 +111,11 @@ class SentimentEngine:
         self,
         signal_callback: Optional[Callable[[SentimentSignal], None]] = None,
         config: Optional[dict] = None,
+        signal_logger: Optional["SignalLogger"] = None,
     ) -> None:
         cfg = config or {}
         self._callback = signal_callback
+        self._signal_logger = signal_logger
 
         # --- LLM config ---
         llm_cfg = cfg.get("llm", {})
@@ -227,6 +232,11 @@ class SentimentEngine:
                 )
                 if self._callback is not None:
                     self._callback(signal)
+                if self._signal_logger is not None:
+                    try:
+                        self._signal_logger.log_news_event(signal)
+                    except Exception as exc:
+                        logger.warning("SignalLogger.log_news_event failed: %s", exc)
         except Exception as exc:
             logger.error("Error during sentiment poll cycle: %s", exc)
 

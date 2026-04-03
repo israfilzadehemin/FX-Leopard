@@ -26,9 +26,12 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 from analysis.models import SentimentSignal, TechnicalSignal, TradeSignal, VolatilitySignal
+
+if TYPE_CHECKING:
+    from storage.signal_logger import SignalLogger
 
 logger = logging.getLogger(__name__)
 
@@ -107,8 +110,10 @@ class ConfluenceEngine:
         self,
         signal_callback: Optional[Callable[[TradeSignal], None]] = None,
         config: Optional[Dict] = None,
+        signal_logger: Optional["SignalLogger"] = None,
     ) -> None:
         self._callback = signal_callback
+        self._signal_logger = signal_logger
         cfg = config or {}
 
         # Load scoring weights
@@ -667,6 +672,12 @@ class ConfluenceEngine:
             final_score,
             confluences,
         )
+
+        if self._signal_logger is not None:
+            try:
+                self._signal_logger.log_signal(trade_signal)
+            except Exception as exc:
+                logger.warning("SignalLogger.log_signal failed: %s", exc)
 
         if self._callback is not None:
             self._callback(trade_signal)

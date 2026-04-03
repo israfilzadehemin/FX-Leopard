@@ -39,7 +39,10 @@ class LoggingConfig:
 @dataclass
 class CalendarConfig:
     pre_event_alert_minutes: int = 15
+    post_event_check_delay_minutes: int = 2
     min_impact: str = "high"
+    refresh_interval_minutes: int = 60
+    sources: List[str] = field(default_factory=lambda: ["forexfactory_json"])
 
 
 @dataclass
@@ -112,7 +115,10 @@ def load_config(path: Optional[str] = None) -> AppConfig:
     calendar_raw = raw.get("calendar", {})
     calendar = CalendarConfig(
         pre_event_alert_minutes=calendar_raw.get("pre_event_alert_minutes", 15),
+        post_event_check_delay_minutes=calendar_raw.get("post_event_check_delay_minutes", 2),
         min_impact=calendar_raw.get("min_impact", "high"),
+        refresh_interval_minutes=calendar_raw.get("refresh_interval_minutes", 60),
+        sources=calendar_raw.get("sources", ["forexfactory_json"]),
     )
 
     return AppConfig(

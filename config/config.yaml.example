@@ -71,7 +71,11 @@ llm:
 
 calendar:
   pre_event_alert_minutes: 15
-  min_impact: high
+  post_event_check_delay_minutes: 2
+  min_impact: high          # high | medium | low
+  refresh_interval_minutes: 60
+  sources:
+    - forexfactory_json
 
 logging:
   signal_db: "data/signals.db"

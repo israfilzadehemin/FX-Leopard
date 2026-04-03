@@ -140,17 +140,40 @@ class SentimentSignal:
 @dataclass
 class VolatilitySignal:
     """
-    Output from the Volatility & Spike Monitor (Issue #6 stub).
+    Output from the Volatility & Spike Monitor (Issue #6).
 
-    Fields will be expanded when Issue #6 is implemented.
+    Emitted when either an ATR expansion or a pip spike is detected for a
+    symbol.  Also used as a lightweight "no-spike" context snapshot that the
+    confluence engine consults while scoring.
     """
 
     symbol: str
-    timestamp: str
+    timestamp: str                          # ISO-8601 UTC string
+
+    # --- Trigger ---
+    trigger: str = ""                       # "atr_expansion" | "pip_spike" | ""
     spike_detected: bool = False
-    atr_ratio: Optional[float] = None
-    pips_moved: Optional[float] = None
-    window_minutes: int = 5
+
+    # --- Price movement ---
+    magnitude: float = 0.0                  # pips moved OR atr_ratio
+    direction: str = "neutral"             # "bullish" | "bearish" | "neutral"
+    price_before: Optional[float] = None
+    price_now: Optional[float] = None
+
+    # --- ATR context ---
+    atr_current: Optional[float] = None
+    atr_average: Optional[float] = None
+    atr_ratio: Optional[float] = None      # current ATR / 14-period ATR average
+
+    # --- Timing ---
+    window_seconds: int = 300               # rolling pip-spike window in seconds
+    pips_moved: Optional[float] = None      # alias kept for backward compat
+
+    # --- Enrichment ---
+    probable_catalyst: str = "Pending news check"
+    score_contribution: float = 0.0         # out of max 0.5 in confluence engine
+
+    # Legacy alias
     catalyst: str = ""
 
 

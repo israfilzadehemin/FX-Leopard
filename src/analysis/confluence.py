@@ -170,6 +170,15 @@ class ConfluenceEngine:
         """Cache the latest volatility signal for a symbol (Issue #6 hook)."""
         self._volatility_cache[volatility.symbol] = volatility
 
+    def update_volatility(self, signal: VolatilitySignal) -> None:
+        """
+        Preferred entry point for Issue #6 — VolatilityMonitor calls this.
+
+        Stores the signal so that the next :meth:`on_technical_signal` call
+        for the same symbol picks it up when computing the confluence score.
+        """
+        self.on_volatility_signal(signal)
+
     # ------------------------------------------------------------------
     # Score computation
     # ------------------------------------------------------------------
@@ -480,7 +489,17 @@ class ConfluenceEngine:
         signal: TechnicalSignal,
         volatility: Optional[VolatilitySignal],
     ) -> tuple[float, List[str]]:
-        """Stub — returns 0 until Issue #6 is merged."""
+        """
+        Score the volatility context contribution.
+
+        Scoring rules
+        -------------
+        * If a pre-computed ``score_contribution`` is present on the signal,
+          use it directly (capped at ``max_w``).
+        * Favourable context (no spike, ATR ratio 0.8–1.4): full score.
+        * Active spike detected: zero — the market is too noisy for a clean
+          entry (the spike monitor handles its own standalone alert).
+        """
         max_w = self._weights.get(
             "volatility_context", DEFAULT_WEIGHTS["volatility_context"]
         )
@@ -490,11 +509,18 @@ class ConfluenceEngine:
         if volatility is None:
             return 0.0, tags
 
+        # If the VolatilityMonitor pre-computed a contribution, honour it
+        if volatility.score_contribution > 0.0 and not volatility.spike_detected:
+            score = min(volatility.score_contribution, max_w)
+            tags.append("volatility_context_scored")
+            return score, tags
+
         # Favourable context: moderate volatility (not a spike)
         if not volatility.spike_detected and volatility.atr_ratio is not None:
             if 0.8 <= volatility.atr_ratio <= 1.4:
                 tags.append("volatility_context_normal")
                 return max_w, tags
+
         return 0.0, tags
 
     # ------------------------------------------------------------------

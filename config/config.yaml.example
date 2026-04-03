@@ -53,6 +53,22 @@ api_keys:
   openai: "YOUR_OPENAI_API_KEY"
   newsapi: "YOUR_NEWSAPI_KEY"
 
+news:
+  poll_interval_seconds: 120
+  sources:
+    - newsapi
+    - reuters_rss
+    - investing_rss
+    - forexlive_rss
+  max_headlines_per_batch: 20
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  api_key: "YOUR_OPENAI_API_KEY"
+  max_tokens: 500
+  temperature: 0.1
+
 calendar:
   pre_event_alert_minutes: 15
   min_impact: high

@@ -18,6 +18,11 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+# Maximum number of headline hashes to retain for deduplication.
+# When the limit is reached the cache is cleared so it never grows
+# without bound during long-running deployments.
+_MAX_SEEN_HASHES: int = 5_000
+
 # ---------------------------------------------------------------------------
 # RSS feed URLs
 # ---------------------------------------------------------------------------
@@ -120,6 +125,10 @@ class NewsFeed:
             if headline.hash not in self._seen_hashes:
                 self._seen_hashes.add(headline.hash)
                 new_headlines.append(headline)
+
+        # Cap the deduplication set to prevent unbounded memory growth.
+        if len(self._seen_hashes) >= _MAX_SEEN_HASHES:
+            self._seen_hashes.clear()
 
         return new_headlines[: self._max_per_batch]
 

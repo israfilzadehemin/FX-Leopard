@@ -12,6 +12,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -354,6 +355,7 @@ class CalendarFeed:
 
         self._check_staleness(events)
         self._events = events
+        self._prune_scheduled_ids(events)
         self._schedule_alerts(events)
         logger.info("Calendar refreshed — %d qualifying events loaded", len(events))
 
@@ -377,6 +379,20 @@ class CalendarFeed:
                 "Calendar has no future events — ForexFactory feed may be stale. "
                 "Check: https://nfs.faireconomy.media/ff_calendar_thisweek.json"
             )
+
+    def _prune_scheduled_ids(self, events: List[EconomicEvent]) -> None:
+        """
+        Remove stale job IDs from *_scheduled_event_ids*.
+
+        Keeps only IDs that correspond to an event still present in the
+        current ``events`` list.  This prevents the set from growing
+        without bound across repeated weekly calendar refreshes.
+        """
+        valid_ids: set[str] = set()
+        for event in events:
+            valid_ids.add(f"pre_{event.country}_{event.title}_{event.datetime}")
+            valid_ids.add(f"post_{event.country}_{event.title}_{event.datetime}")
+        self._scheduled_event_ids &= valid_ids
 
     # ------------------------------------------------------------------
     # Fetching & parsing
@@ -557,15 +573,22 @@ def _parse_ff_datetime(raw: dict) -> Optional[str]:
 
         # ForexFactory format: "04-03-2026" and "8:30am"
         if not time_str or time_str.strip() == "":
-            time_str = "12:00am"
+            # All-day event — no specific time given; use midnight UTC.
+            dt = datetime.strptime(date_str.strip(), "%m-%d-%Y")
+            return dt.replace(tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         dt_str = f"{date_str} {time_str}"
         dt = datetime.strptime(dt_str, "%m-%d-%Y %I:%M%p")
-        dt = dt.replace(tzinfo=timezone.utc)
-        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        # ForexFactory publishes timed events in US Eastern Time (ET).
+        # Convert to UTC so all downstream logic uses a consistent timezone.
+        dt = dt.replace(tzinfo=ZoneInfo("America/New_York"))
+        dt_utc = dt.astimezone(timezone.utc)
+        return dt_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
     except Exception:
         try:
-            # Try just the date
+            # Try just the date — treat midnight as the event time.
+            # No intra-day time means we keep UTC midnight (the offset between
+            # ET and UTC doesn't matter when there is no time component).
             dt = datetime.strptime(date_str.strip(), "%m-%d-%Y")
             dt = dt.replace(tzinfo=timezone.utc)
             return dt.strftime("%Y-%m-%dT%H:%M:%SZ")

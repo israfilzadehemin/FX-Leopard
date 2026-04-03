@@ -74,29 +74,42 @@ def _detect_rsi_divergence(
     """
     Detect regular RSI divergence over the last ``lookback`` candles.
 
-    Bullish divergence: price makes a lower low but RSI makes a higher low.
-    Bearish divergence: price makes a higher high but RSI makes a lower high.
+    Bullish divergence: the current close sets a new low relative to the
+    prior window, but RSI at the current bar is *higher* than it was at
+    the prior price low — momentum is improving despite lower price.
+
+    Bearish divergence: the current close sets a new high relative to the
+    prior window, but RSI at the current bar is *lower* than it was at
+    the prior price high — momentum is fading despite higher price.
 
     Returns 'bullish', 'bearish', or None.
     """
     if len(closes) < lookback + 1 or len(rsi_values) < lookback + 1:
         return None
 
+    # Slice the last (lookback + 1) bars so the final bar is "current".
     price_window = closes[-(lookback + 1):]
     rsi_window = rsi_values[-(lookback + 1):]
 
-    # Compare first and last bar in the window
-    price_low_start = price_window[0]
-    price_low_end = price_window[-1]
-    rsi_low_start = rsi_window[0]
-    rsi_low_end = rsi_window[-1]
+    current_close = price_window[-1]
+    current_rsi = rsi_window[-1]
 
-    # Bullish: price lower low + RSI higher low
-    if price_low_end < price_low_start and rsi_low_end > rsi_low_start:
+    # Prior window: all bars except the current one.
+    prior_prices = price_window[:-1]
+    prior_rsis = rsi_window[:-1]
+
+    # Bullish: current close is below the prior-window low, but RSI is higher
+    # than it was at that prior low (momentum diverges positively).
+    # Single-pass min search using enumerate avoids two list iterations.
+    prior_low_idx, prior_low_price = min(enumerate(prior_prices), key=lambda x: x[1])
+    if current_close < prior_low_price and current_rsi > prior_rsis[prior_low_idx]:
         return "bullish"
 
-    # Bearish: price higher high + RSI lower high
-    if price_low_end > price_low_start and rsi_low_end < rsi_low_start:
+    # Bearish: current close is above the prior-window high, but RSI is lower
+    # than it was at that prior high (momentum diverges negatively).
+    # Single-pass max search using enumerate avoids two list iterations.
+    prior_high_idx, prior_high_price = max(enumerate(prior_prices), key=lambda x: x[1])
+    if current_close > prior_high_price and current_rsi < prior_rsis[prior_high_idx]:
         return "bearish"
 
     return None

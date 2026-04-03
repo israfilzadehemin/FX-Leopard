@@ -120,7 +120,9 @@ class SentimentEngine:
         # --- LLM config ---
         llm_cfg = cfg.get("llm", {})
         api_keys = cfg.get("api_keys", {})
-        openai_key: str = llm_cfg.get("api_key", "") or api_keys.get("openai", "")
+        openai_key: str = api_keys.get("openai", "")
+        if not openai_key:
+            logger.warning("No OpenAI API key found at api_keys.openai in config.yaml")
         self._model: str = llm_cfg.get("model", "gpt-4o-mini")
         self._max_tokens: int = int(llm_cfg.get("max_tokens", 500))
         self._temperature: float = float(llm_cfg.get("temperature", 0.1))

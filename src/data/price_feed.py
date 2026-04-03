@@ -161,6 +161,14 @@ class PriceFeed:
         if unknown:
             logger.warning("Unknown timeframes ignored: %s", unknown)
 
+        if len(self.symbols) > 8:
+            logger.warning(
+                "TwelveData free tier supports max 8 WebSocket symbols. "
+                "You have %d configured. Upgrade to Grow plan ($29/mo) or reduce symbols. "
+                "See: https://twelvedata.com/pricing",
+                len(self.symbols),
+            )
+
     # ------------------------------------------------------------------
     # Public interface
     # ------------------------------------------------------------------

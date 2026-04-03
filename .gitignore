@@ -17,6 +17,7 @@ env/
 
 # Environment / secrets
 .env
+config/config.yaml
 # Test / coverage
 .pytest_cache/
 .coverage

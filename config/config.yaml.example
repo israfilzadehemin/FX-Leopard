@@ -1,6 +1,9 @@
 # FX-Leopard Configuration
 # Copy this file to config/config.yaml and fill in your values
 
+# NOTE: TwelveData free tier supports max 8 WebSocket symbols.
+# Upgrade to Grow plan ($29/mo) for all 11, or remove 3 symbols.
+# Recommended removals for free tier: XAGUSD, USOIL, UKOIL
 pairs:
   - EURUSD
   - GBPUSD
@@ -61,21 +64,24 @@ api_keys:
 
 news:
   poll_interval_seconds: 120
+  newsapi_daily_limit: 90  # stay safely under NewsAPI free tier cap of 100/day
   sources:
-    - newsapi
-    - reuters_rss
-    - investing_rss
     - forexlive_rss
+    - fxstreet_rss
+    - marketwatch_rss
+    # newsapi  # optional: enable if you have a paid plan
   max_headlines_per_batch: 20
 
 llm:
   provider: openai
   model: gpt-4o-mini
-  api_key: "YOUR_OPENAI_API_KEY"
+  # api_key moved to api_keys.openai — do not duplicate here
   max_tokens: 500
   temperature: 0.1
 
 calendar:
+  # Primary source: ForexFactory JSON (unofficial community mirror — no SLA)
+  # Fallback: manually set min_impact to 'medium' to widen event coverage
   pre_event_alert_minutes: 15
   post_event_check_delay_minutes: 2
   min_impact: high          # high | medium | low

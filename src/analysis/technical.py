@@ -100,14 +100,16 @@ def _detect_rsi_divergence(
 
     # Bullish: current close is below the prior-window low, but RSI is higher
     # than it was at that prior low (momentum diverges positively).
-    prior_low_idx = prior_prices.index(min(prior_prices))
-    if current_close < prior_prices[prior_low_idx] and current_rsi > prior_rsis[prior_low_idx]:
+    # Single-pass min search using enumerate avoids two list iterations.
+    prior_low_idx, prior_low_price = min(enumerate(prior_prices), key=lambda x: x[1])
+    if current_close < prior_low_price and current_rsi > prior_rsis[prior_low_idx]:
         return "bullish"
 
     # Bearish: current close is above the prior-window high, but RSI is lower
     # than it was at that prior high (momentum diverges negatively).
-    prior_high_idx = prior_prices.index(max(prior_prices))
-    if current_close > prior_prices[prior_high_idx] and current_rsi < prior_rsis[prior_high_idx]:
+    # Single-pass max search using enumerate avoids two list iterations.
+    prior_high_idx, prior_high_price = max(enumerate(prior_prices), key=lambda x: x[1])
+    if current_close > prior_high_price and current_rsi < prior_rsis[prior_high_idx]:
         return "bearish"
 
     return None

@@ -388,7 +388,7 @@ class CalendarFeed:
         current ``events`` list.  This prevents the set from growing
         without bound across repeated weekly calendar refreshes.
         """
-        valid_ids: set = set()
+        valid_ids: set[str] = set()
         for event in events:
             valid_ids.add(f"pre_{event.country}_{event.title}_{event.datetime}")
             valid_ids.add(f"post_{event.country}_{event.title}_{event.datetime}")

@@ -228,9 +228,13 @@ class VolatilityMonitor:
     # Public feed methods
     # ------------------------------------------------------------------
 
-    def on_candle(self, candle: OHLCVCandle) -> Optional[VolatilitySignal]:
+    def on_candle(self, candle) -> Optional[VolatilitySignal]:
         """
         Process a completed OHLCV candle.
+
+        Accepts either an :class:`~analysis.models.OHLCVCandle` dataclass or
+        the plain ``dict`` format emitted by ``CandleBuffer`` in price_feed.py
+        (keys: symbol, timeframe, open, high, low, close, volume, timestamp).
 
         Only candles matching ``monitor_timeframe`` are used for ATR
         expansion checks.  All candles update the pip-spike price tick
@@ -239,6 +243,18 @@ class VolatilityMonitor:
         Returns the emitted :class:`~analysis.models.VolatilitySignal`, or
         ``None`` if no alert was fired.
         """
+        if isinstance(candle, dict):
+            candle = OHLCVCandle(
+                symbol=candle["symbol"],
+                timeframe=candle["timeframe"],
+                timestamp=candle["timestamp"],
+                open=float(candle["open"]),
+                high=float(candle["high"]),
+                low=float(candle["low"]),
+                close=float(candle["close"]),
+                volume=int(candle["volume"]),
+            )
+
         state = self._get_state(candle.symbol)
 
         # Parse candle timestamp to unix seconds

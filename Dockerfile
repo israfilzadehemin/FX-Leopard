@@ -12,4 +12,9 @@ COPY config/ ./config/
 
 RUN mkdir -p data logs
 
+# Run as a non-root user for improved container security.
+RUN adduser --system --no-create-home --group appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 CMD ["python", "src/main.py"]

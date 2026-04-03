@@ -185,16 +185,20 @@ class TestCountryPairsMap:
 
 class TestParseFFDatetime:
     def test_parses_mm_dd_yyyy_with_time(self):
+        # ForexFactory times are US Eastern (EDT = UTC-4 in April).
+        # 8:30am ET → 12:30 UTC
         raw = {"date": "04-03-2026", "time": "8:30am"}
         result = _parse_ff_datetime(raw)
-        assert result == "2026-04-03T08:30:00Z"
+        assert result == "2026-04-03T12:30:00Z"
 
     def test_parses_mm_dd_yyyy_with_pm_time(self):
+        # 1:30pm ET → 17:30 UTC
         raw = {"date": "04-03-2026", "time": "1:30pm"}
         result = _parse_ff_datetime(raw)
-        assert result == "2026-04-03T13:30:00Z"
+        assert result == "2026-04-03T17:30:00Z"
 
     def test_empty_time_uses_midnight(self):
+        # All-day events have no time component; midnight UTC is used as-is.
         raw = {"date": "04-03-2026", "time": ""}
         result = _parse_ff_datetime(raw)
         assert result == "2026-04-03T00:00:00Z"

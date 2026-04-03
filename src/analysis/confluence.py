@@ -268,9 +268,7 @@ class ConfluenceEngine:
         # D1 alignment
         d1 = htf_signals.get("D1")
         if d1 is not None:
-            if d1.ema_alignment == direction.lower() + "ish" or d1.ema_alignment == (
-                "bullish" if direction == "BUY" else "bearish"
-            ):
+            if d1.ema_alignment == ("bullish" if direction == "BUY" else "bearish"):
                 bonus = self._htf.get("d1_alignment", DEFAULT_HTF_BONUS["d1_alignment"])
                 adjustment += bonus
                 extra.append(f"d1_trend_aligns_{direction.lower()}")

@@ -118,8 +118,7 @@ async def main() -> None:
 
     async def on_candle(candle: Any) -> None:
         tech_engine.on_candle(candle)
-        if hasattr(candle, "symbol"):
-            vol_monitor.on_candle(candle)
+        vol_monitor.on_candle(candle)
 
     feed = PriceFeed(
         api_key=cfg.api_keys.twelvedata,

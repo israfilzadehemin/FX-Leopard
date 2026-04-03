@@ -545,3 +545,9 @@ class TelegramNotifier:
         """Record *obj* as sent at the current monotonic time."""
         key = _signal_key(obj)
         self._dedup_cache[key] = time.monotonic()
+        # Evict all entries that have aged beyond the dedup window to prevent
+        # the cache from growing without bound in long-running deployments.
+        now = time.monotonic()
+        expired = [k for k, ts in self._dedup_cache.items() if (now - ts) >= self._dedup_window]
+        for k in expired:
+            del self._dedup_cache[k]

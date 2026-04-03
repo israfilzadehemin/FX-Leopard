@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from analysis.models import SentimentSignal, TradeSignal
-from data.calendar_feed import EconomicEvent
+from data.calendar_feed import EconomicEvent, _parse_numeric
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,9 @@ class SignalLogger:
     def _init_db(self) -> None:
         """Create the database tables if they do not exist yet."""
         with self._write_lock:
+            # WAL mode improves concurrent read performance and is safe for
+            # our single-writer / multiple-reader usage pattern.
+            self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS signals (
@@ -412,26 +415,3 @@ def _classify_beat_miss(event: EconomicEvent) -> Optional[str]:
     if actual_val < forecast_val:
         return "miss"
     return "inline"
-
-
-def _parse_numeric(value: str) -> Optional[float]:
-    """Strip common suffixes and parse to float (mirrors calendar_feed logic)."""
-    if not value:
-        return None
-    v = value.strip().replace(",", "").upper()
-    multiplier = 1.0
-    if v.endswith("B"):
-        multiplier = 1_000_000_000
-        v = v[:-1]
-    elif v.endswith("M"):
-        multiplier = 1_000_000
-        v = v[:-1]
-    elif v.endswith("K"):
-        multiplier = 1_000
-        v = v[:-1]
-    elif v.endswith("%"):
-        v = v[:-1]
-    try:
-        return float(v) * multiplier
-    except ValueError:
-        return None

@@ -298,6 +298,10 @@ class SignalLogger:
         sql = f"SELECT * FROM signals {where} ORDER BY fired_at DESC LIMIT ?"
         params.append(limit)
 
+        # All operations (reads and writes) are serialised through the same
+        # lock because Python's sqlite3 Connection object is not safe to use
+        # from multiple threads simultaneously even for reads when check_same_thread
+        # is disabled.  A single lock is the simplest correct approach.
         with self._write_lock:
             cur = self._conn.execute(sql, params)
             return [dict(row) for row in cur.fetchall()]
@@ -317,6 +321,7 @@ class SignalLogger:
         where = "WHERE fired_at >= ?" if since else ""
         params: List = [since] if since else []
 
+        # Serialised via the same lock used for writes — see get_signals for rationale.
         with self._write_lock:
             # Total
             total = self._conn.execute(

@@ -217,9 +217,9 @@ class TestLogNewsEvent:
         ss = _make_sentiment_signal(headlines=[])
         row_id = sl.log_news_event(ss)
         conn = sl._get_connection()
-        row = dict(conn.execute(
-            "SELECT * FROM news_events WHERE id=?", (row_id,)
-        ).fetchone())
+        row = dict(
+            conn.execute("SELECT * FROM news_events WHERE id=?", (row_id,)).fetchone()
+        )
         assert row["headline"] is None
 
 

@@ -42,7 +42,9 @@ scoring:
 volatility:
   atr_multiplier: 1.5
   pip_spike_threshold: 30
-  spike_window_minutes: 5
+  pip_spike_window_seconds: 300
+  cooldown_minutes: 10
+  monitor_timeframe: H1
 
 notifications:
   channel: telegram

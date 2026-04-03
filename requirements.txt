@@ -1,13 +1,12 @@
 twelvedata==1.2.6
-websocket-client==1.7.0
 requests==2.31.0
 feedparser==6.0.11
 pandas>=3.0.0
-pandas-ta>=0.4.67b0
+pandas-ta>=0.4.67b0  # NOTE: beta release — monitor for breakage with pandas>=3.0
 numpy>=2.2.0
-openai==1.12.0
+openai>=1.50.0
 APScheduler==3.10.4
-python-telegram-bot==21.0.1
+python-telegram-bot>=21.5
 PyYAML==6.0.1
 python-dotenv==1.0.1
-aiohttp==3.9.3
+aiohttp>=3.10.0

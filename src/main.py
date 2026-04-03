@@ -77,10 +77,11 @@ async def main() -> None:
     # ------------------------------------------------------------------
     # 2. Confluence Engine — routes scored trade signals to notifier
     # ------------------------------------------------------------------
+    loop = asyncio.get_running_loop()
 
     def on_trade_signal(signal: TradeSignal) -> None:
-        asyncio.get_event_loop().call_soon_threadsafe(
-            lambda: asyncio.ensure_future(notifier.send_signal(signal))
+        loop.call_soon_threadsafe(
+            asyncio.ensure_future, notifier.send_signal(signal)
         )
 
     confluence = ConfluenceEngine(
@@ -102,8 +103,8 @@ async def main() -> None:
 
     def on_volatility_signal(vs: VolatilitySignal) -> None:
         confluence.update_volatility(vs)
-        asyncio.get_event_loop().call_soon_threadsafe(
-            lambda: asyncio.ensure_future(notifier.send_volatility(vs))
+        loop.call_soon_threadsafe(
+            asyncio.ensure_future, notifier.send_volatility(vs)
         )
 
     vol_monitor = VolatilityMonitor(
@@ -142,8 +143,8 @@ async def main() -> None:
     # ------------------------------------------------------------------
 
     def on_calendar_alert(message: str) -> None:
-        asyncio.get_event_loop().call_soon_threadsafe(
-            lambda: asyncio.ensure_future(notifier.send_raw(message))
+        loop.call_soon_threadsafe(
+            asyncio.ensure_future, notifier.send_raw(message)
         )
 
     calendar_feed = CalendarFeed(
@@ -170,7 +171,6 @@ async def main() -> None:
     # ------------------------------------------------------------------
     # 9. Graceful shutdown
     # ------------------------------------------------------------------
-    loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
     def _handle_shutdown(*_: Any) -> None:

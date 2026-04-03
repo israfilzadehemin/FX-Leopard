@@ -23,9 +23,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 RSS_FEED_URLS: Dict[str, str] = {
-    "reuters_rss": "https://feeds.reuters.com/reuters/businessNews",
-    "investing_rss": "https://www.investing.com/rss/news_285.rss",
     "forexlive_rss": "https://www.forexlive.com/feed/news",
+    "fxstreet_rss": "https://www.fxstreet.com/rss/news",
+    "marketwatch_rss": "https://feeds.content.dowjones.io/public/rss/mw_realtimeheadlines",
+    "ft_rss": "https://www.ft.com/rss/home/uk",
 }
 
 NEWSAPI_URL = "https://newsapi.org/v2/top-headlines"
@@ -63,14 +64,17 @@ class NewsFeed:
 
         news:
           sources:
-            - newsapi
-            - reuters_rss
-            - investing_rss
             - forexlive_rss
+            - fxstreet_rss
+            - marketwatch_rss
+            # newsapi  # optional: enable if you have a paid plan
 
     Deduplication is based on the MD5 hash of the headline title so the same
     story is never returned twice across successive :meth:`fetch_headlines`
     calls.  Call :meth:`clear_seen_cache` to reset the deduplication window.
+
+    NewsAPI daily-limit tracking prevents exceeding the free-tier cap of 100
+    requests/day.  The counter resets automatically at UTC midnight.
     """
 
     def __init__(self, config: Optional[dict] = None) -> None:
@@ -79,10 +83,16 @@ class NewsFeed:
 
         self._newsapi_key: str = cfg.get("api_keys", {}).get("newsapi", "")
         self._sources: List[str] = news_cfg.get(
-            "sources", ["reuters_rss", "investing_rss", "forexlive_rss"]
+            "sources", ["forexlive_rss", "fxstreet_rss"]
         )
         self._max_per_batch: int = int(news_cfg.get("max_headlines_per_batch", 20))
+        self._newsapi_daily_limit: int = int(news_cfg.get("newsapi_daily_limit", 90))
         self._seen_hashes: Set[str] = set()
+
+        # Daily request counter for NewsAPI (resets at UTC midnight)
+        self._newsapi_request_count: int = 0
+        self._newsapi_count_date: Optional[str] = None  # "YYYY-MM-DD"
+        self._newsapi_skip_today: bool = False
 
     # ------------------------------------------------------------------
     # Public API
@@ -120,11 +130,35 @@ class NewsFeed:
     # Source fetchers
     # ------------------------------------------------------------------
 
+    def _reset_newsapi_counter_if_new_day(self) -> None:
+        """Reset the daily counter and skip flag when the UTC date changes."""
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if self._newsapi_count_date != today:
+            self._newsapi_request_count = 0
+            self._newsapi_count_date = today
+            self._newsapi_skip_today = False
+
     def _fetch_newsapi(self) -> List[NewsHeadline]:
         """Fetch English business headlines from NewsAPI."""
         if not self._newsapi_key:
             logger.debug("NewsAPI key not configured — skipping")
             return []
+
+        self._reset_newsapi_counter_if_new_day()
+
+        if self._newsapi_skip_today:
+            logger.debug("NewsAPI daily limit reached — using RSS-only today")
+            return []
+
+        if self._newsapi_request_count >= self._newsapi_daily_limit:
+            logger.warning(
+                "NewsAPI daily limit reached (%d/%d) — switching to RSS-only for today",
+                self._newsapi_request_count,
+                self._newsapi_daily_limit,
+            )
+            self._newsapi_skip_today = True
+            return []
+
         try:
             response = requests.get(
                 NEWSAPI_URL,
@@ -136,7 +170,17 @@ class NewsFeed:
                 },
                 timeout=10,
             )
+
+            if response.status_code == 429:
+                logger.warning(
+                    "NewsAPI returned HTTP 429 (rate limit) — switching to RSS-only for today"
+                )
+                self._newsapi_skip_today = True
+                return []
+
             response.raise_for_status()
+            self._newsapi_request_count += 1
+
             data = response.json()
             headlines: List[NewsHeadline] = []
             for article in data.get("articles", []):

@@ -352,6 +352,7 @@ class CalendarFeed:
             logger.warning("Calendar fetch failed: %s", exc)
             return
 
+        self._check_staleness(events)
         self._events = events
         self._schedule_alerts(events)
         logger.info("Calendar refreshed — %d qualifying events loaded", len(events))
@@ -359,6 +360,23 @@ class CalendarFeed:
     def get_events(self) -> List[EconomicEvent]:
         """Return the current list of parsed economic events."""
         return list(self._events)
+
+    # ------------------------------------------------------------------
+    # Staleness check
+    # ------------------------------------------------------------------
+
+    def _check_staleness(self, events: List[EconomicEvent]) -> None:
+        """Warn if calendar data appears stale (all events are in the past)."""
+        if not events:
+            logger.warning("Calendar returned 0 events — feed may be stale or down")
+            return
+        now = datetime.now(timezone.utc)
+        future_events = [e for e in events if e.get_datetime() > now]
+        if not future_events:
+            logger.warning(
+                "Calendar has no future events — ForexFactory feed may be stale. "
+                "Check: https://nfs.faireconomy.media/ff_calendar_thisweek.json"
+            )
 
     # ------------------------------------------------------------------
     # Fetching & parsing

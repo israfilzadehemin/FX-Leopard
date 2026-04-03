@@ -74,7 +74,8 @@ class NewsFeed:
     calls.  Call :meth:`clear_seen_cache` to reset the deduplication window.
 
     NewsAPI daily-limit tracking prevents exceeding the free-tier cap of 100
-    requests/day.  The counter resets automatically at UTC midnight.
+    requests/day.  The default limit is 90 (a 10% safety buffer below the cap).
+    The counter resets automatically at UTC midnight.
     """
 
     def __init__(self, config: Optional[dict] = None) -> None:

@@ -28,6 +28,7 @@ from analysis.volatility import VolatilityMonitor
 from data.calendar_feed import CalendarFeed
 from data.price_feed import PriceFeed
 from notifications.telegram_bot import TelegramNotifier
+from storage.signal_logger import SignalLogger
 
 load_dotenv()
 
@@ -56,6 +57,12 @@ async def main() -> None:
     raw_cfg = _load_raw_config()
 
     # ------------------------------------------------------------------
+    # 0. Signal Logger — persists every alert to SQLite
+    # ------------------------------------------------------------------
+    signal_logger = SignalLogger()
+    logger.info("SignalLogger initialised")
+
+    # ------------------------------------------------------------------
     # 1. Telegram Notifier
     # ------------------------------------------------------------------
     notifier = TelegramNotifier(
@@ -79,6 +86,7 @@ async def main() -> None:
     confluence = ConfluenceEngine(
         signal_callback=on_trade_signal,
         config=raw_cfg,
+        signal_logger=signal_logger,
     )
 
     # ------------------------------------------------------------------
@@ -125,6 +133,7 @@ async def main() -> None:
     sentiment_engine = SentimentEngine(
         signal_callback=confluence.update_sentiment,
         config=raw_cfg,
+        signal_logger=signal_logger,
     )
     sentiment_engine.start()
 
@@ -140,6 +149,7 @@ async def main() -> None:
     calendar_feed = CalendarFeed(
         config=raw_cfg,
         on_alert=on_calendar_alert,
+        signal_logger=signal_logger,
     )
     calendar_feed.start()
 

@@ -11,10 +11,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
-from typing import Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
+
+if TYPE_CHECKING:
+    from storage.signal_logger import SignalLogger
 
 logger = logging.getLogger(__name__)
 
@@ -291,6 +294,7 @@ class CalendarFeed:
         self,
         config: Optional[dict] = None,
         on_alert: Optional[Callable[[str], None]] = None,
+        signal_logger: Optional["SignalLogger"] = None,
     ) -> None:
         cfg = config or {}
         cal_cfg = cfg.get("calendar", {})
@@ -300,6 +304,7 @@ class CalendarFeed:
         self._min_impact: str = cal_cfg.get("min_impact", "high").lower()
         self._refresh_interval: int = int(cal_cfg.get("refresh_interval_minutes", 60))
         self._on_alert: Callable[[str], None] = on_alert or (lambda msg: logger.info(msg))
+        self._signal_logger = signal_logger
 
         self._events: List[EconomicEvent] = []
         self._scheduled_event_ids: set = set()
@@ -466,6 +471,11 @@ class CalendarFeed:
         message = format_pre_event_alert(event, self._pre_alert_minutes)
         logger.info("Firing pre-event alert: %s", event.title)
         self._on_alert(message)
+        if self._signal_logger is not None:
+            try:
+                self._signal_logger.log_calendar_event(event)
+            except Exception as exc:
+                logger.warning("SignalLogger.log_calendar_event failed: %s", exc)
 
     def _fire_post_event_alert(self, event: EconomicEvent) -> None:
         """Called by the scheduler after an event — re-fetches to get actual value."""
@@ -478,6 +488,11 @@ class CalendarFeed:
 
         message = format_post_event_alert(updated_event)
         self._on_alert(message)
+        if self._signal_logger is not None:
+            try:
+                self._signal_logger.log_calendar_event(updated_event)
+            except Exception as exc:
+                logger.warning("SignalLogger.log_calendar_event failed: %s", exc)
 
     def _refetch_event(self, event: EconomicEvent) -> EconomicEvent:
         """

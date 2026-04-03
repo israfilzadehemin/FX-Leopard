@@ -14,7 +14,7 @@ VolatilityMonitor ─ (volatility alerts) → TelegramNotifier + ConfluenceEngin
 import asyncio
 import logging
 import signal as _signal
-from typing import Any
+from typing import Any, Dict
 
 import yaml
 from dotenv import load_dotenv
@@ -38,7 +38,7 @@ logging.basicConfig(
 logger = logging.getLogger("fx-leopard")
 
 
-def _load_raw_config(cfg_path: str | None = None) -> dict:
+def _load_raw_config(cfg_path: str | None = None) -> Dict[str, Any]:
     """Load the raw YAML dict (used for engines that accept a dict config)."""
     import os
 
@@ -89,21 +89,7 @@ async def main() -> None:
     )
 
     # ------------------------------------------------------------------
-    # 4. Price Feed — drives TechnicalEngine + VolatilityMonitor
-    # ------------------------------------------------------------------
-
-    async def on_candle(candle: Any) -> None:
-        tech_engine.on_candle(candle)
-
-    feed = PriceFeed(
-        api_key=cfg.api_keys.twelvedata,
-        symbols=cfg.pairs,
-        timeframes=cfg.timeframes,
-        on_candle=on_candle,
-    )
-
-    # ------------------------------------------------------------------
-    # 5. Volatility Monitor
+    # 4. Volatility Monitor
     # ------------------------------------------------------------------
 
     def on_volatility_signal(vs: VolatilitySignal) -> None:
@@ -117,15 +103,21 @@ async def main() -> None:
         volatility_callback=on_volatility_signal,
     )
 
-    # Wire volatility monitor into price feed
-    _orig_on_candle = on_candle
+    # ------------------------------------------------------------------
+    # 5. Price Feed — drives TechnicalEngine + VolatilityMonitor
+    # ------------------------------------------------------------------
 
-    async def on_candle_full(candle: Any) -> None:
-        await _orig_on_candle(candle)
+    async def on_candle(candle: Any) -> None:
+        tech_engine.on_candle(candle)
         if hasattr(candle, "symbol"):
             vol_monitor.on_candle(candle)
 
-    feed._on_candle = on_candle_full  # type: ignore[attr-defined]
+    feed = PriceFeed(
+        api_key=cfg.api_keys.twelvedata,
+        symbols=cfg.pairs,
+        timeframes=cfg.timeframes,
+        on_candle=on_candle,
+    )
 
     # ------------------------------------------------------------------
     # 6. Sentiment Engine
@@ -198,4 +190,5 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 

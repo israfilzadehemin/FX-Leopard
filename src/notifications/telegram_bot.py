@@ -190,7 +190,7 @@ def format_watch_alert(signal: TradeSignal) -> str:
     """
     try:
         dt = datetime.fromisoformat(signal.timestamp.replace("Z", "+00:00"))
-        time_str = dt.strftime("%H:%M UTC")  # noqa: F841 — kept for potential future use
+        dt.strftime("%H:%M UTC")  # validate timestamp parses correctly
     except ValueError:
         pass
 
@@ -354,7 +354,7 @@ def _signal_key(obj: Any) -> str:
         raw = f"CAL:{obj.title}:{obj.datetime}"
     else:
         raw = str(obj)
-    return hashlib.md5(raw.encode()).hexdigest()  # nosec B324
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 # ---------------------------------------------------------------------------
